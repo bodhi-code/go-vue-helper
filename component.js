@@ -4,9 +4,6 @@
 }(this, (function () {
     return {
         Component: {
-           /* render: function (createElement) {
-
-            },*/
             props: {}
         },
         install: function (Vue) {

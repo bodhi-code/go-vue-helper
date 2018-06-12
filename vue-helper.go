@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"errors"
+	"vue-helper/HtmlParser"
 )
 
 func getCurrentPath() (string, error) {
@@ -103,6 +104,8 @@ func main() {
 		fmt.Printf("\nVue DevTools(0.0.1)\n")
 		fmt.Printf("\nAvailable commands:\n")
 		fmt.Println("component        (alias of: c)")
+		fmt.Println("templateWay      (alias of: -t)")
+		fmt.Println("renderWay        (alias of: -r)")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -111,12 +114,19 @@ func main() {
 	} else {
 		switch flag.Args()[0] {
 		case "component", "c":
-			sourceDir := "app/views/" + flag.Args()[2] + "/template/"
-			sourceFile := flag.Args()[1] + ".php"
-			f, _ := os.Open(sourceDir + sourceFile)
-			sourceContent, _ := ioutil.ReadAll(f)
-			insertContent := "template:`" + string(sourceContent) + "`,"
-			createVueComponent(flag.Args()[1], insertContent)
+			if flag.Args()[2]=="-t"{
+				sourceDir := "app/views/" + flag.Args()[3] + "/template/"
+				sourceFile := flag.Args()[1] + ".php"
+				f, _ := os.Open(sourceDir + sourceFile)
+				sourceContent, _ := ioutil.ReadAll(f)
+				insertContent := "template:`" + string(sourceContent) + "`,"
+				createVueComponent(flag.Args()[1], insertContent)
+			}else if flag.Args()[2]=="-r" {
+				sourceDir := "app/views/" + flag.Args()[3] + "/template/"
+				sourceFile := flag.Args()[1] + ".php"
+				insertContent:=HtmlParser.Parser(sourceDir+sourceFile)
+				createVueComponent(flag.Args()[1], insertContent)
+			}
 		}
 	}
 }
