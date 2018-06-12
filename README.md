@@ -1,6 +1,8 @@
 # go-vue-helper
 vue-helper是基于golang实现的，使用vue-helper可以将html fragment转化为vue通用组件或者插件。
 
+支持template和render方式生成vue插件
+
 使用时需注意：
 
 1.需要将component.js和vue-helper.exe放在一起
@@ -11,4 +13,6 @@ vue-helper是基于golang实现的，使用vue-helper可以将html fragment转�
 
 基本命令如下
 
-vue-helper c componentName(组件名) sourceDesc(源目标路径)。
+vue-helper c componentName(组件名) -t(template方式生成) sourceDesc(源目标路径)。
+
+vue-helper c componentName(组件名) -r(render方式生成) sourceDesc(源目标路径)
