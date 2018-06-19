@@ -78,28 +78,6 @@ func pop(pStack *Stack) (bool, *HtmlTag) {
 	return true, &reval
 }
 
-//处理标签的class属性
-func dealClass(template string) (newTemplate string, classAttr HtmlTagAttr) {
-	var classSeparator = `class="`
-	if strings.Index(template, classSeparator) > -1 {
-		var classSeparatorIndex = strings.Index(template, classSeparator)
-		var templateRune = []rune(template)
-		for i := classSeparatorIndex; i < len(templateRune); i++ {
-			if templateRune[i] == '"' && templateRune[i-1] != '=' {
-				classAttrStr := string(templateRune[classSeparatorIndex:i+1])
-				classAttrArr := strings.Split(classAttrStr, "=")
-				classAttr = HtmlTagAttr{classAttrArr[0], classAttrArr[1]}
-				newTemplate = strings.Replace(template, classAttrStr, "", -1)
-				break
-			}
-		}
-	} else {
-		newTemplate = template
-		classAttr = HtmlTagAttr{"class", ""}
-	}
-	return newTemplate, classAttr
-}
-
 //字符串aa-bb—cc变aaBbCc
 func strFirstToUpper(str string) string {
 	strArr := strings.Split(str, "-")
@@ -121,13 +99,49 @@ func strFirstToUpper(str string) string {
 	return upperStr
 }
 
+//处理标签的class属性
+func dealClass(template string) (newTemplate string, classAttr HtmlTagAttr) {
+	template = strings.Trim(template, " ")
+	var classSeparator = `class="`
+	if strings.Index(template, classSeparator) > -1 {
+		var templateRune = []rune(template)
+		var classSeparatorIndex = strings.Index(template, classSeparator)
+		/*for i, L := 0, len(templateRune); i < L; i++ {
+			if string(templateRune[i:i+7]) == classSeparator {
+				classSeparatorIndex = i
+				break
+			}
+		}*/
+		for i, L := classSeparatorIndex, len(templateRune); i < L; i++ {
+			if templateRune[i] == '"' && templateRune[i-1] != '=' {
+				classAttrStr := string(templateRune[classSeparatorIndex:i+1])
+				classAttrArr := strings.Split(classAttrStr, "=")
+				classAttr = HtmlTagAttr{classAttrArr[0], classAttrArr[1]}
+				newTemplate = strings.Replace(template, classAttrStr, "", -1)
+				break
+			}
+		}
+	} else {
+		newTemplate = template
+		classAttr = HtmlTagAttr{"class", ""}
+	}
+	return newTemplate, classAttr
+}
+
 //处理标签的style属性
 func dealStyle(template string) (newTemplate string, styleAttr HtmlTagAttr) {
+	template = strings.Trim(template, " ")
 	var styleSeparator = `style="`
 	if strings.Index(template, styleSeparator) > -1 {
-		var styleSeparatorIndex = strings.Index(template, styleSeparator)
 		var templateRune = []rune(template)
-		for i := styleSeparatorIndex; i < len(templateRune); i++ {
+		var styleSeparatorIndex = strings.Index(template, styleSeparator)
+		/*for i, L := 0, len(templateRune); i < L; i++ {
+			if string(templateRune[i:i+7]) == styleSeparator {
+				styleSeparatorIndex = i
+				break
+			}
+		}*/
+		for i, L := styleSeparatorIndex, len(templateRune); i < L; i++ {
 			if templateRune[i] == '"' && templateRune[i-1] != '=' {
 				styleAttrStr := string(templateRune[styleSeparatorIndex:i+1])
 				styleAttrArr := strings.Split(styleAttrStr, "=")
@@ -141,6 +155,53 @@ func dealStyle(template string) (newTemplate string, styleAttr HtmlTagAttr) {
 		styleAttr = HtmlTagAttr{"style", ""}
 	}
 	return newTemplate, styleAttr
+}
+
+//处理中文和html标签同行的问题
+func dealChinese(template string) (newTemplate string) {
+	template = strings.Trim(template, " ")
+	templateRune := []rune(template)
+	if templateRune[0] != '<' {
+		L := len(templateRune)
+		for i := 0; i < L; i++ {
+			if templateRune[i] == '<' {
+				c := 0
+				for j := i; j < L; j++ {
+					if templateRune[j] == '>' {
+						c++
+						if c == 2 {
+							newTemplate = string(templateRune[i:j+1])
+							break
+						}
+					}
+				}
+				break
+			}
+		}
+	} else {
+		newTemplate = template
+	}
+	return newTemplate
+}
+
+//获取htmlTag的内容
+func getHtmlTagContent(template string) (htmlTagContent string) {
+	template = strings.Trim(template, " ")
+	var leftSeparator, rightSeparator = '<', '>'
+	templateRune := []rune(template)
+	L := len(templateRune)
+	for i := 0; i < L; i++ {
+		if templateRune[i] == leftSeparator {
+			for j := i; j < L; j++ {
+				if templateRune[j] == rightSeparator {
+					htmlTagContent = string(templateRune[i+1:j])
+					break
+				}
+			}
+			break
+		}
+	}
+	return htmlTagContent
 }
 
 //生成整理html标签
@@ -161,10 +222,10 @@ func sortHtmlTags(path string) []HtmlTag {
 			var htmlTag = HtmlTag{TagName: "", TagAttrs: make([]HtmlTagAttr, 0)}
 			var template = templateBuffer.String()
 			templateBuffer.Reset()
-			var leftSeparator, rightSeparator = "<", ">"
+			template = dealChinese(template)
 			template, classAttr := dealClass(template)
 			template, styleAttr := dealStyle(template)
-			var htmlTagContent = string([]rune(template)[(strings.Index(template, leftSeparator) + 1):strings.Index(template, rightSeparator)])
+			var htmlTagContent = getHtmlTagContent(template)
 			var htmlTagContentArr = strings.Split(htmlTagContent, " ")
 			for key, val := range htmlTagContentArr {
 				if len(htmlTagContentArr) > 1 {
@@ -256,47 +317,55 @@ func sortHtmlTags(path string) []HtmlTag {
 			for index, attr := range htmlTag.TagAttrs {
 				if index != attrsLen-1 {
 					if attr.AttrName != "style" {
-						attrs = attrs + attr.AttrName + `:` + attr.AttrVal + `,`
+						if strings.Contains(attr.AttrName,"-"){
+							attrs = attrs +`"`+ attr.AttrName + `":` + attr.AttrVal+","
+						}else{
+							attrs = attrs + attr.AttrName + `:` + attr.AttrVal+","
+						}
 					} else {
 						styleAttrStr := "style:{"
-						attr.AttrVal=strings.Replace(attr.AttrVal,`"`,``,-1)
+						attr.AttrVal = strings.Replace(attr.AttrVal, `"`, ``, -1)
 						styleAttrArr := strings.Split(attr.AttrVal, ";")
 						for _, styleAttr := range styleAttrArr {
-							if styleAttr!=""{
+							if styleAttr != "" {
 								style := strings.Split(styleAttr, ":")
 								styleAttrStr = styleAttrStr + strFirstToUpper(style[0]) + ":" + `"` + style[1] + `"`
 							}
 						}
-						styleAttrStr=styleAttrStr+"}"
-						htmlTag.CodeStr = strings.Replace(htmlTag.CodeStr, "{!style!}",styleAttrStr, -1)
+						styleAttrStr = styleAttrStr + "}"
+						htmlTag.CodeStr = strings.Replace(htmlTag.CodeStr, "{!style!}", styleAttrStr, -1)
 					}
 				} else {
 					if attr.AttrName != "style" {
-						attrs = attrs + attr.AttrName + `:` + attr.AttrVal
+						if strings.Contains(attr.AttrName,"-"){
+							attrs = attrs +`"`+ attr.AttrName + `":` + attr.AttrVal
+						}else{
+							attrs = attrs + attr.AttrName + `:` + attr.AttrVal
+						}
 					} else {
 						styleAttrStr := "style:{"
-						attr.AttrVal=strings.Replace(attr.AttrVal,`"`,``,-1)
+						attr.AttrVal = strings.Replace(attr.AttrVal, `"`, ``, -1)
 						styleAttrArr := strings.Split(attr.AttrVal, ";")
 						for _, styleAttr := range styleAttrArr {
-							if styleAttr!=""{
+							if styleAttr != "" {
 								style := strings.Split(styleAttr, ":")
 								styleAttrStr = styleAttrStr + strFirstToUpper(style[0]) + ":" + `"` + style[1] + `"`
 							}
 						}
-						styleAttrStr=styleAttrStr+"}"
-						htmlTag.CodeStr = strings.Replace(htmlTag.CodeStr, "{!style!}",styleAttrStr, -1)
+						styleAttrStr = styleAttrStr + "}"
+						htmlTag.CodeStr = strings.Replace(htmlTag.CodeStr, "{!style!}", styleAttrStr, -1)
 					}
 				}
 			}
 			attrs = attrs + `}`
 			htmlTag.CodeStr = strings.Replace(htmlTag.CodeStr, "{!attrs!}", attrs, -1)
-			if strings.Contains(htmlTag.CodeStr,",{!style!}"){
-				htmlTag.CodeStr = strings.Replace(htmlTag.CodeStr, "{!style!}","style:{}", -1)
+			if strings.Contains(htmlTag.CodeStr, ",{!style!}") {
+				htmlTag.CodeStr = strings.Replace(htmlTag.CodeStr, "{!style!}", "style:{}", -1)
 			}
 		} else {
 			htmlTag.CodeStr = strings.Replace(htmlTag.CodeStr, "{!attrs!}", "", -1)
-			if strings.Contains(htmlTag.CodeStr,",{!style!}"){
-				htmlTag.CodeStr = strings.Replace(htmlTag.CodeStr, ",{!style!}","style:{}", -1)
+			if strings.Contains(htmlTag.CodeStr, ",{!style!}") {
+				htmlTag.CodeStr = strings.Replace(htmlTag.CodeStr, ",{!style!}", "style:{}", -1)
 			}
 		}
 		sortHtmlTags = append(sortHtmlTags, htmlTag)
@@ -326,7 +395,8 @@ func Parser(path string) string {
 						if strings.Contains(sortHtmlTags[i].CodeStr, `{!child!}`) {
 							sortHtmlTags[i].CodeStr = strings.Replace(sortHtmlTags[i].CodeStr, `{!child!}`, tempHtmlTag.CodeStr, -1)
 						} else {
-							lastIndex := strings.LastIndex(sortHtmlTags[i].CodeStr, `]`)
+							/*lastIndex := strings.LastIndex(sortHtmlTags[i].CodeStr, `]`)*/
+							lastIndex:=len([]rune(sortHtmlTags[i].CodeStr))-2
 							sortHtmlTags[i].CodeStr = string([]rune(sortHtmlTags[i].CodeStr)[:lastIndex]) + `,` + tempHtmlTag.CodeStr + `])`
 						}
 						break
@@ -335,6 +405,6 @@ func Parser(path string) string {
 			}
 		}
 	}
-	render := `render:function(createElement){` + sortHtmlTags[0].CodeStr + `},`
+	render := `render:function(createElement){ return ` + sortHtmlTags[0].CodeStr + `},`
 	return render
 }

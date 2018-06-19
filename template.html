@@ -1,35 +1,23 @@
 <div class="layui-card">
-    <div class="layui-card-header">版本信息</div>
-    <div class="layui-card-body layui-text">
-        <table class="layui-table">
-            <colgroup>
-                <col width="100">
-                <col>
-            </colgroup>
-            <tbody>
-            <tr>
-                <td>当前版本</td>
-                <td>
-                    v1.0.0 pro
-                    <a href="http://fly.layui.com/docs/3/" target="_blank"
-                       style="padding-left: 15px;">更新日志</a>
-                </td>
-            </tr>
-            <tr>
-                <td>基于框架</td>
-                <td>
-                    phalcon3.4.0 + layui2.3.0
-                </td>
-            </tr>
-            <tr>
-                <td>主要特色</td>
-                <td>零门槛 / 响应式 / 清爽 / 极简</td>
-            </tr>
-            <tr>
-                <td>主要声明</td>
-                <td>本系统代码开源，遵守MIT协议。</td>
-            </tr>
-            </tbody>
-        </table>
+    <div class="layui-card-header">效果报告</div>
+    <div class="layui-card-body layadmin-takerates">
+        <div class="layui-progress" lay-showpercent="yes">
+            <h3>
+                转化率（日同比 28%<span class="layui-edge layui-edge-top" lay-tips="增长"
+                                 lay-offset="-15"></span>）
+            </h3>
+            <div class="layui-progress-bar" lay-percent="65%" style="width: 65%;">
+                <span class="layui-progress-text">65%</span>
+            </div>
+        </div>
+        <div class="layui-progress" lay-showpercent="yes">
+            <h3>
+                签到率（日同比 11% <span class="layui-edge layui-edge-bottom" lay-tips="下降"
+                                  lay-offset="-15"></span>）
+            </h3>
+            <div class="layui-progress-bar" lay-percent="32%" style="width: 32%;">
+                <span class="layui-progress-text">32%</span>
+            </div>
+        </div>
     </div>
 </div>
